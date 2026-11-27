@@ -1,35 +1,33 @@
-// Bottom pill tab bar from the components sheet: Home, People, Chat, Rewards.
-// Only Home is live in milestone 1; the others arrive with the social side.
+// Bottom pill tab bar: Home (sprout), People, Chat, Rewards (cup). Yellow circle on the active tab.
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 import { colors } from '../theme';
+import { Icon, type IconName } from './Icons';
 
 export type Tab = 'home' | 'people' | 'chat' | 'rewards';
 
-const icons: Record<Tab, string> = {
-  home: 'M12 21v-9 M12 12c0-4 -3-6 -7-6 0 4 3 6 7 6z M12 12c0-4 3-6 7-6 0 4-3 6-7 6z',
-  people: 'M4 19c0-3 2-5 4-5s4 2 4 5 M12 19c0-3 2-5 4-5s4 2 4 5',
-  chat: 'M4 5h16v11H9l-4 3v-3H4z M8 10h8',
-  rewards: 'M5 10h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z M16 12h2a2 2 0 0 1 0 4h-2 M9 4v3 M12 4v3',
-};
+const TABS: { id: Tab; icon: IconName; href: string; label: string }[] = [
+  { id: 'home', icon: 'sprout', href: '/home', label: 'Home' },
+  { id: 'people', icon: 'group', href: '/social', label: "Who's out" },
+  { id: 'chat', icon: 'chat', href: '/social/invite', label: 'Invites' },
+  { id: 'rewards', icon: 'cup', href: '/points', label: 'Rewards' },
+];
 
-export function TabBar({ active, onSelect }: { active: Tab; onSelect?: (t: Tab) => void }) {
+export function TabBar({ active }: { active: Tab }) {
   return (
     <View style={s.bar}>
-      {(Object.keys(icons) as Tab[]).map((t) => {
-        const on = t === active;
-        const stroke = on ? colors.plum : colors.cream;
+      {TABS.map((t) => {
+        const on = t.id === active;
         return (
-          <Pressable key={t} accessibilityRole="tab" accessibilityLabel={t} onPress={() => onSelect?.(t)} style={[s.item, on && s.on]}>
-            <Svg width={24} height={24} viewBox="0 0 24 24">
-              <Path d={icons[t]} stroke={stroke} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              {t === 'people' ? (
-                <>
-                  <Circle cx={8} cy={10} r={2.2} stroke={stroke} strokeWidth={1.6} fill="none" />
-                  <Circle cx={16} cy={10} r={2.2} stroke={stroke} strokeWidth={1.6} fill="none" />
-                </>
-              ) : null}
-            </Svg>
+          <Pressable
+            key={t.id}
+            accessibilityRole="tab"
+            accessibilityLabel={t.label}
+            accessibilityState={{ selected: on }}
+            onPress={() => !on && router.replace(t.href as never)}
+            style={[s.item, on && s.on]}
+          >
+            <Icon name={t.icon} size={26} color={on ? colors.plum : colors.cream} />
           </Pressable>
         );
       })}
@@ -38,7 +36,7 @@ export function TabBar({ active, onSelect }: { active: Tab; onSelect?: (t: Tab) 
 }
 
 const s = StyleSheet.create({
-  bar: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.plum, borderRadius: 999, padding: 8 },
-  item: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  bar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', backgroundColor: colors.plum, borderRadius: 999, height: 64, paddingHorizontal: 8 },
+  item: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   on: { backgroundColor: colors.yellow },
 });

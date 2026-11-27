@@ -1,51 +1,67 @@
-// Home: points, stamp progress, and the way into a check-in.
+// Home ("Progress collecting stamp"): points to the next stamp, the stamp card, today outside.
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
-import { StampRow } from '../components/Stamps';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { DayOverview, PointsCard, StampsCard } from '../components/Cards';
+import { Icon } from '../components/Icons';
+import { IconDisc, Kicker, Title } from '../components/kit';
 import { TabBar } from '../components/TabBar';
-import { Button, Card, Heading, Screen, text } from '../components/ui';
-import { POINTS_PER_STAMP, STAMPS_PER_VOUCHER } from '../lib/rules';
+import { Button, Screen } from '../components/ui';
+import { COPY } from '../lib/copy';
+import { POINTS_PER_STAMP } from '../lib/rules';
 import { useStore } from '../lib/store';
-import { colors, type } from '../theme';
+import { today } from '../lib/today';
+import { colors, fonts, type } from '../theme';
 
 export default function Home() {
-  const { points, stamps, reset } = useStore();
-  const onCard = stamps % STAMPS_PER_VOUCHER || (stamps > 0 ? STAMPS_PER_VOUCHER : 0);
-  const left = STAMPS_PER_VOUCHER - onCard;
+  const { name, points, stamps, active, log, vouchersReady, loadDemo, reset } = useStore();
+  const day = today(log, points);
 
   return (
-    <Screen style={{ justifyContent: 'space-between' }}>
-      <View>
-        <Heading kicker="hello there!" title={left > 0 ? 'Your next stamp is getting closer!' : 'Your coffee is ready!'} />
-        <Card>
-          <Text style={text.label}>Today's progress</Text>
-          <View style={s.row}>
-            <Text style={s.points}>{points % POINTS_PER_STAMP}</Text>
-            <Text style={[text.body, { marginLeft: 6 }]}>of {POINTS_PER_STAMP} pts to your next stamp</Text>
-          </View>
-          <View style={s.track}>
-            <View style={[s.fill, { width: `${((points % POINTS_PER_STAMP) / POINTS_PER_STAMP) * 100}%` }]} />
-          </View>
-          <StampRow count={stamps} />
-          <Text style={[text.body, { marginTop: 10 }]}>
-            {left > 0 ? `${left} more ${left === 1 ? 'stamp' : 'stamps'} to a free coffee` : 'Show your voucher at the bar'}
-          </Text>
-        </Card>
-        <View style={{ height: 16 }} />
-        <Button label="Tap to check in" onPress={() => router.push('/checkin')} />
+    <Screen scroll footer={<TabBar active="home" />} style={{ gap: 16 }}>
+      <View style={s.head}>
+        <View style={{ flex: 1 }}>
+          <Kicker>{`hello ${name}!`}</Kicker>
+          <Title>{vouchersReady > 0 ? 'Your coffee is ready!' : 'Your next stamp is getting closer!'}</Title>
+        </View>
+        <IconDisc name="person" color={colors.sky} />
       </View>
-      <View>
-        <Text style={s.dev} onPress={reset}>Reset demo data</Text>
-        <TabBar active="home" />
+
+      {active ? (
+        <Pressable style={s.live} onPress={() => router.push('/session')} accessibilityRole="button">
+          <IconDisc name={COPY[active.activity].icon} />
+          <Text style={s.liveText}>{COPY[active.activity].activeTitle}: you're checked in</Text>
+          <Icon name="arrow" color={colors.cream} />
+        </Pressable>
+      ) : null}
+
+      {vouchersReady > 0 ? (
+        <Pressable style={s.voucher} onPress={() => router.push('/voucher')} accessibilityRole="button">
+          <IconDisc name="cup" color={colors.plum} iconColor={colors.yellow} />
+          <Text style={s.voucherText}>Your coffee voucher is ready</Text>
+          <Icon name="arrow" />
+        </Pressable>
+      ) : null}
+
+      <PointsCard points={points % POINTS_PER_STAMP} onPress={() => router.push('/points')} />
+      <StampsCard stamps={stamps} />
+      {!active ? <Button label="Tap to check in" onPress={() => router.push('/checkin')} /> : null}
+      <DayOverview {...day} />
+
+      <View style={s.devRow}>
+        <Text style={s.dev} onPress={() => router.push('/demo')}>All screens</Text>
+        <Text style={s.dev} onPress={() => loadDemo()}>Load demo data</Text>
+        <Text style={s.dev} onPress={reset}>Reset</Text>
       </View>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 8 },
-  points: { ...type.display, color: colors.plum },
-  track: { height: 8, borderRadius: 4, backgroundColor: 'rgba(105,22,65,0.15)', overflow: 'hidden', marginBottom: 14 },
-  fill: { height: 8, backgroundColor: colors.plum },
-  dev: { ...type.label, color: colors.plumSoft, textAlign: 'center', marginBottom: 12 },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  live: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.plum, borderRadius: 20, padding: 14 },
+  liveText: { flex: 1, fontFamily: fonts.medium, fontSize: 16, color: colors.cream },
+  voucher: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.yellow, borderRadius: 20, padding: 14 },
+  voucherText: { flex: 1, fontFamily: fonts.medium, fontSize: 16, color: colors.plum },
+  devRow: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 4 },
+  dev: { ...type.label, color: colors.plumSoft },
 });
