@@ -12,9 +12,9 @@ const STEPS = [
   { n: '01', title: 'Collect points for different activities', body: 'Work, meet, walk or take a break outside.' },
   { n: '02', title: 'Tap in', body: 'Tap your phone on the check-in point outside.', tap: true },
   { n: '03', title: 'Your session starts right away', body: 'No forms, no buttons. The timer just runs.' },
-  { n: '04', title: 'Earn points every 30 minutes outside', body: 'Shorter sessions do not count yet.' },
+  { n: '04', title: 'Earn points every 30 minutes outside', body: '10 points per 30 minutes of deep work, up to 40 a day.' },
   { n: '05', title: 'Done? Check out the same way', body: 'Tap the same point again on your way back in.', tap: true },
-  { n: '06', title: 'Get closer to a new stamp every time you go outside', body: 'Each counted session adds a stamp.' },
+  { n: '06', title: 'Get closer to a new stamp every time you go outside', body: 'Every 50 points fills one stamp.' },
   { n: '07', title: 'Fill all 8 stamps to claim your reward!', body: 'Eight stamps make one free coffee.' },
   { n: '08', title: 'Your day at a glance', body: 'See your points, stamps and who is outside on Home.' },
 ];

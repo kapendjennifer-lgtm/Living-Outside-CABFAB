@@ -47,7 +47,7 @@ export default function Tap() {
       <Card color={colors.cream}>
         <Text style={text.label}>{spot.name}</Text>
         <Text style={[text.heading, { marginTop: 4 }]}>{a.label} session</Text>
-        <Text style={[text.body, { marginTop: 4 }]}>Earn {a.points} points after {a.minMinutes} minutes.</Text>
+        <Text style={[text.body, { marginTop: 4 }]}>{a.hint}</Text>
         <View style={{ height: 16 }} />
         <Button label="See my session" onPress={() => router.replace('/session')} />
       </Card>

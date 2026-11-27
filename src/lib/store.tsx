@@ -2,23 +2,22 @@
 // Milestone 2 swaps this for Supabase behind the same hook.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { scoreSession, type ActivityId, type Outcome } from './rules';
+import { scoreSession, stampsFromPoints, type ActivityId, type Earned, type Outcome } from './rules';
 
 export type ActiveSession = { activity: ActivityId; spot: string; startedAt: number };
-export type Stamp = { activity: ActivityId; at: number; points: number };
-
 type State = {
   onboarded: boolean;
   active: ActiveSession | null;
-  stamps: Stamp[]; // stamps on the current card (resets after a voucher)
-  points: number;
-  lastOutcome: Outcome | null;
+  earned: Earned[]; // every counted session
+  lastOutcome: (Outcome & { newStamp: boolean }) | null;
 };
 
-const initial: State = { onboarded: false, active: null, stamps: [], points: 0, lastOutcome: null };
-const KEY = 'outside-office/v1';
+const initial: State = { onboarded: false, active: null, earned: [], lastOutcome: null };
+const KEY = 'outside-office/v2';
 
 type Api = State & {
+  points: number; // all-time total
+  stamps: number; // all-time stamps (50 points each)
   ready: boolean;
   finishOnboarding: () => void;
   checkIn: (activity: ActivityId, spot: string) => void;
@@ -43,8 +42,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (ready) AsyncStorage.setItem(KEY, JSON.stringify(state));
   }, [state, ready]);
 
+  const points = state.earned.reduce((n, e) => n + e.points, 0);
+
   const api: Api = {
     ...state,
+    points,
+    stamps: stampsFromPoints(points),
     ready,
     finishOnboarding: () => setState((s) => ({ ...s, onboarded: true })),
     checkIn: (activity, spot) =>
@@ -52,13 +55,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     checkOut: (at = Date.now()) => {
       const a = state.active;
       if (!a) return null;
-      const outcome = scoreSession(a.activity, a.startedAt, at);
+      const outcome = scoreSession(a.activity, a.startedAt, at, state.earned);
+      const gained = outcome.counted ? outcome.points : 0;
+      const newStamp = stampsFromPoints(points + gained) > stampsFromPoints(points);
       setState((s) => ({
         ...s,
         active: null,
-        lastOutcome: outcome,
-        points: s.points + (outcome.counted ? outcome.points : 0),
-        stamps: outcome.counted ? [...s.stamps, { activity: a.activity, at, points: outcome.points }] : s.stamps,
+        lastOutcome: { ...outcome, newStamp },
+        earned: outcome.counted ? [...s.earned, { activity: a.activity, at, points: gained, minutes: outcome.minutes }] : s.earned,
       }));
       return outcome;
     },

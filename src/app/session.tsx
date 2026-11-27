@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { TabBar } from '../components/TabBar';
 import { Button, Card, Heading, Screen, text } from '../components/ui';
-import { ACTIVITIES, REMINDER_AFTER_MIN } from '../lib/rules';
+import { ACTIVITIES, BLOCK_MIN, REMINDER_AFTER_MIN } from '../lib/rules';
 import { SPOTS } from '../lib/spots';
 import { useStore } from '../lib/store';
 import { colors, type } from '../theme';
@@ -29,8 +29,10 @@ export default function Session() {
   const spot = SPOTS[active.spot];
   const elapsed = now - active.startedAt;
   const mins = elapsed / 60000;
-  const progress = Math.min(1, mins / a.minMinutes);
-  const counted = mins >= a.minMinutes;
+  // Deep work and team sessions earn per full 30 minutes; the others earn on tap out.
+  const perBlock = active.activity === 'deep_work' || active.activity === 'team_session';
+  const blocks = Math.floor(mins / BLOCK_MIN);
+  const progress = perBlock ? (mins % BLOCK_MIN) / BLOCK_MIN : 1;
 
   return (
     <Screen style={{ justifyContent: 'space-between' }}>
@@ -43,7 +45,11 @@ export default function Session() {
             <View style={[s.fill, { width: `${progress * 100}%` }]} />
           </View>
           <Text style={[text.body, { marginTop: 8 }]}>
-            {counted ? `This session counts. +${a.points} points when you check out.` : `${Math.ceil(a.minMinutes - mins)} min until it counts`}
+            {!perBlock
+              ? `+${a.points} points when you tap out`
+              : blocks === 0
+                ? `${Math.ceil(BLOCK_MIN - mins)} min until your first ${a.points} points`
+                : `${Math.min(blocks * a.points, 40)} points so far, next ${a.points} in ${Math.ceil(BLOCK_MIN - (mins % BLOCK_MIN))} min`}
           </Text>
         </Card>
         {mins >= REMINDER_AFTER_MIN ? (
