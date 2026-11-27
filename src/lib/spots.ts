@@ -12,3 +12,5 @@ export const SPOTS: Record<string, Spot> = {
   'break-zone': { id: 'break-zone', name: 'Break zone', activity: 'break' },
   'meeting-table': { id: 'meeting-table', name: 'Meeting table', activity: 'meeting' },
 };
+
+export const spotFor = (activity: ActivityId) => Object.values(SPOTS).find((s) => s.activity === activity)!.id;

@@ -28,6 +28,7 @@ export const type = {
   title: { fontFamily: fonts.bold, fontSize: 32, letterSpacing: -0.64, lineHeight: 36 },
   heading: { fontFamily: fonts.bold, fontSize: 20, letterSpacing: -0.2 },
   body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 24 },
+  small: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 21 },
   label: { fontFamily: fonts.medium, fontSize: 12, letterSpacing: 0.96, textTransform: 'uppercase' as const },
   script: { fontFamily: fonts.hand, fontSize: 28 },
 };

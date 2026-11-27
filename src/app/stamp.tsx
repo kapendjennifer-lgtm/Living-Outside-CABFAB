@@ -1,74 +1,84 @@
-// After checking out: "1 stamp added", or the friendly "quick note" when it didn't count.
+// Check-out summary on plum: "nice work!" / "fresh mind!" / "recharged!",
+// the new stamp, and the card with duration and stamps so far.
 import { Redirect, router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { StampRow } from '../components/Stamps';
-import { Button, Card, Screen, text } from '../components/ui';
+import { Icon } from '../components/Icons';
+import { Chip, CloseButton, Kicker, Label } from '../components/kit';
+import { StampDots } from '../components/Stamps';
+import { Button, Screen } from '../components/ui';
+import { COPY } from '../lib/copy';
 import { POINTS_PER_STAMP, STAMPS_PER_VOUCHER } from '../lib/rules';
 import { useStore } from '../lib/store';
-import { colors, type } from '../theme';
+import { duration } from '../lib/time';
+import { colors, fonts, type } from '../theme';
 
-export default function StampAdded() {
-  const { lastOutcome, stamps, points } = useStore();
-  if (!lastOutcome) return <Redirect href="/home" />;
+const words = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'];
 
-  if (!lastOutcome.counted) {
-    return (
-      <Screen style={{ justifyContent: 'space-between' }}>
-        <View>
-          <Text style={s.kickerPlum}>just so you know</Text>
-          <Text style={[type.title, { color: colors.plum, marginBottom: 20 }]}>A quick note</Text>
-          <Card>
-            <Text style={text.body}>
-              {lastOutcome.reason === 'too_short'
-                ? `This session was shorter than 30 minutes, so no points this time. No worries, the next one counts.`
-                : `You already reached today's limit for this activity, so this one did not add points. It still counts as time outside.`}
-            </Text>
-          </Card>
-        </View>
-        <Button label="Got it" onPress={() => router.replace('/home')} />
-      </Screen>
-    );
-  }
-
+export default function Summary() {
+  const { lastOutcome: o, stamps, points } = useStore();
+  if (!o || !o.counted) return <Redirect href="/home" />;
+  const c = COPY[o.activity];
   const onCard = stamps % STAMPS_PER_VOUCHER || (stamps > 0 ? STAMPS_PER_VOUCHER : 0);
-  const full = lastOutcome.newStamp && onCard === STAMPS_PER_VOUCHER;
+  const left = STAMPS_PER_VOUCHER - onCard;
+  const full = onCard === STAMPS_PER_VOUCHER;
+  const chips = o.activity === 'walk' || o.activity === 'break' ? [c.doneChip] : [c.spotTitle, c.doneChip];
+  const go = () => router.replace(full && o.newStamp ? '/voucher' : '/home');
+
   return (
-    <Screen dark style={{ justifyContent: 'space-between' }}>
-      <View style={{ alignItems: 'center', marginTop: 40 }}>
-        <Text style={s.kicker}>nice work!</Text>
-        <Text style={s.title}>{lastOutcome.newStamp ? '1 stamp added' : `+${lastOutcome.points} points`}</Text>
-        <View style={s.badge}>
-          <Text style={s.badgeText}>+{lastOutcome.points}</Text>
+    <Screen dark scroll style={{ justifyContent: 'space-between', gap: 16 }}>
+      <View style={{ alignItems: 'center' }}>
+        <CloseButton dark onPress={() => router.replace('/home')} />
+        <Kicker dark center>{c.doneKicker}</Kicker>
+        <Text style={s.title}>{o.newStamp ? '1 stamp added' : `+${o.points} points`}</Text>
+        <View style={s.slot}>
+          <View style={s.stamp}>
+            <Icon name={c.icon} size={60} stroke={1.5} />
+            <Text style={s.stampPts}>+{o.points} pts</Text>
+          </View>
+        </View>
+        <View style={s.chips}>
+          {chips.map((t) => (
+            <Chip key={t} label={t} />
+          ))}
         </View>
       </View>
-      <Card color={colors.cream}>
+
+      <View style={s.card}>
         <View style={s.stats}>
           <View>
-            <Text style={text.label}>Time outside</Text>
-            <Text style={text.heading}>{lastOutcome.minutes} min</Text>
+            <Label>Duration</Label>
+            <Text style={s.value}>{duration(o.minutes)}</Text>
           </View>
           <View>
-            <Text style={text.label}>Next stamp</Text>
-            <Text style={text.heading}>{points % POINTS_PER_STAMP} of {POINTS_PER_STAMP}</Text>
-          </View>
-          <View>
-            <Text style={text.label}>Stamps</Text>
-            <Text style={text.heading}>{onCard} of {STAMPS_PER_VOUCHER}</Text>
+            <Label>Stamps</Label>
+            <Text style={s.value}>{onCard} of {STAMPS_PER_VOUCHER}</Text>
           </View>
         </View>
-        <StampRow count={stamps} />
-        <View style={{ height: 16 }} />
-        <Button label={full ? 'Claim my coffee' : 'Done'} onPress={() => router.replace('/home')} />
-      </Card>
+        <StampDots count={stamps} fresh={o.newStamp} />
+        <Text style={s.body}>
+          {full
+            ? 'Your card is full. Enjoy a free coffee!'
+            : o.newStamp
+              ? `${words[left]} more ${left === 1 ? 'stamp' : 'stamps'} for a free coffee.`
+              : `${POINTS_PER_STAMP - (points % POINTS_PER_STAMP)} more points to your next stamp.`}
+        </Text>
+        <Button label={full && o.newStamp ? 'Claim my coffee' : 'Done'} onPress={go} />
+      </View>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  kicker: { ...type.script, color: colors.yellow },
-  kickerPlum: { ...type.script, color: colors.plum },
-  title: { ...type.title, color: colors.cream },
-  badge: { marginTop: 32, width: 140, height: 140, borderRadius: 70, backgroundColor: colors.yellow, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { ...type.display, color: colors.plum },
-  stats: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  title: { fontFamily: fonts.bold, fontSize: 48, lineHeight: 50, letterSpacing: -1.4, color: colors.cream, textAlign: 'center' },
+  slot: {
+    marginTop: 20, width: 184, height: 184, borderRadius: 92, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.cream,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stamp: { width: 136, height: 136, borderRadius: 68, backgroundColor: colors.yellow, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] },
+  stampPts: { fontFamily: fonts.bold, fontSize: 14, color: colors.plum },
+  chips: { flexDirection: 'row', gap: 8, marginTop: 16 },
+  card: { backgroundColor: colors.cream, borderRadius: 24, padding: 24, gap: 14 },
+  stats: { flexDirection: 'row', gap: 40 },
+  value: { fontFamily: fonts.bold, fontSize: 24, color: colors.plum },
+  body: { ...type.small, color: colors.plum },
 });

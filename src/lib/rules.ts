@@ -28,6 +28,10 @@ export const MEETINGS_PER_DAY = 2;
 export const REMINDER_AFTER_MIN = 120; // "Still outside?" tap again at 2 hours
 export const AUTO_END_CREDIT_MIN = 30; // a session with no tap out counts as 30 min
 
+// Shortest session that counts (onboarding "Points per activity": walk 15+ min,
+// break 10+ min, meeting 20+ min; work needs one full 30 minute block).
+export const MIN_MINUTES: Record<ActivityId, number> = { deep_work: 30, team_session: 30, walk: 15, break: 10, meeting: 20 };
+
 export type Earned = { activity: ActivityId; at: number; points: number; minutes: number };
 
 export type Outcome =
@@ -49,6 +53,7 @@ export function scoreSession(activity: ActivityId, startedAt: number, endedAt: n
     return points > 0 ? { counted: true, points, minutes } : { counted: false, reason: 'daily_limit', minutes };
   }
 
+  if (minutes < MIN_MINUTES[activity]) return { counted: false, reason: 'too_short', minutes };
   const timesToday = today.filter((e) => e.activity === activity).length;
   const limit = activity === 'meeting' ? MEETINGS_PER_DAY : 1;
   if (timesToday >= limit) return { counted: false, reason: 'daily_limit', minutes };
